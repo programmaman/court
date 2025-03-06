@@ -7,20 +7,36 @@ import XPinakion from "../../assets/contracts/x-pinakion.json";
 import { getCounterPartyChainId, isSupportedSideChain } from "./chain-params";
 import * as xDai from "./xdai-api";
 
+// Secure logging function
+const log = (message, data = {}) => {
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[SideChainAPI] ${message}`, data);
+  }
+};
+
 export default async function createSideChainApi(provider) {
+  log("createSideChainApi called");
+
   const web3 = new Web3(provider);
   const chainId = await web3.eth.getChainId();
 
+  log("Fetched chainId", { chainId });
+
   if (!isSupportedSideChain(chainId)) {
-    throw new Error(`Unsuported chain ID: ${chainId}`);
+    console.error(`[SideChainAPI] Unsupported chain ID: ${chainId}`);
+    throw new Error(`Unsupported chain ID: ${chainId}`);
   }
 
   const api = xDai.createApi(xDaiParametersFactory(web3));
+
+  log("SideChain API created successfully");
 
   return api;
 }
 
 const xDaiParametersFactory = (web3) => {
+  log("xDaiParametersFactory called");
+
   const contracts = {
     tokenBridge: new web3.eth.Contract(TokenBridgeXDai.abi, ensureEnv("REACT_APP_TOKEN_BRIDGE_XDAI_ADDRESS")),
     wrappedPinakion: new web3.eth.Contract(WrappedPinakion.abi, ensureEnv("REACT_APP_PINAKION_XDAI_ADDRESS")),
@@ -32,10 +48,14 @@ const xDaiParametersFactory = (web3) => {
     klerosLiquid: new web3.eth.Contract(KlerosLiquid.abi, ensureEnv("REACT_APP_KLEROS_LIQUID_XDAI_ADDRESS")),
   };
 
+  log("Contracts initialized");
+
   contracts.tokenBridge.options.handleRevert = true;
   contracts.wrappedPinakion.options.handleRevert = true;
   contracts.klerosLiquidExtraViews.options.handleRevert = true;
   contracts.klerosLiquid.options.handleRevert = true;
+
+  log("Contract options set");
 
   return {
     ...contracts,
@@ -45,9 +65,12 @@ const xDaiParametersFactory = (web3) => {
 };
 
 function ensureEnv(key, msg = `process.env.${key} is not defined`) {
+  log("ensureEnv called", { key });
+
   const value = process.env[key];
 
   if (value === "" || value === undefined || value === null) {
+    console.error(`[SideChainAPI] ${msg}`);
     throw new Error(msg);
   }
 
