@@ -11,6 +11,7 @@ import useGetDraws from "../hooks/use-get-draws";
 const { useDrizzle, useDrizzleState } = drizzleReactHooks;
 
 export default function Cases() {
+  console.info("Loading Cases...")
   const { useCacheCall } = useDrizzle();
   const drizzleState = useDrizzleState((drizzleState) => ({
     account: drizzleState.accounts[0] || VIEW_ONLY_ADDRESS,
