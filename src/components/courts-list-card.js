@@ -9,6 +9,8 @@ import { useDataloader, VIEW_ONLY_ADDRESS } from "../bootstrap/dataloader";
 const { useDrizzle, useDrizzleState } = drizzleReactHooks;
 
 const CourtsListCard = ({ apy, setActiveSubcourtID }) => {
+  console.info("apy", apy);
+  console.info("setActiveSubcourtID", setActiveSubcourtID);
   const { useCacheCall } = useDrizzle();
   const drizzleState = useDrizzleState((drizzleState) => ({
     account: drizzleState.accounts[0] || VIEW_ONLY_ADDRESS,

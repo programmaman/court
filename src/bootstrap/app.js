@@ -1,7 +1,6 @@
 import "../components/theme.css";
 import "./app.css";
 import React, { useState } from "react";
-import t from "prop-types";
 import loadable from "@loadable/component";
 import styled from "styled-components/macro";
 import { Col, Layout, Menu, Row, Spin } from "antd";
@@ -16,15 +15,23 @@ import ChainChangeWatcher from "./chain-change-watcher";
 import drizzle, { DrizzleProvider, Initializer, useDrizzle } from "./drizzle";
 import ErrorBoundary from "../components/error-boundary";
 import SwitchChainFallback from "../components/error-fallback/switch-chain";
+import PropTypes from "prop-types";
 
 export default function App() {
   const [isMenuClosed, setIsMenuClosed] = useState(true);
+
+  // Handlers for toggling and closing the menu
+  const toggleMenu = () => setIsMenuClosed((prev) => !prev);
+  const closeMenu = () => setIsMenuClosed(true);
 
   return (
     <>
       <Helmet>
         <title>Kleros · Court</title>
-        <link href="https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i" rel="stylesheet" />
+        <link
+          href="https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i"
+          rel="stylesheet"
+        />
       </Helmet>
       <DrizzleProvider drizzle={drizzle}>
         <Initializer
@@ -41,7 +48,7 @@ export default function App() {
                       breakpoint="md"
                       collapsedWidth="0"
                       collapsed={isMenuClosed}
-                      onClick={() => setIsMenuClosed((previousState) => !previousState)}
+                      onClick={toggleMenu}
                     >
                       <Menu theme="dark">{MenuItems}</Menu>
                     </StyledLayoutSider>
@@ -68,33 +75,19 @@ export default function App() {
                       </StyledLayoutHeader>
                       <StyledLayoutContent>
                         <Switch>
-                          <Route exact path="/">
-                            <Home />
-                          </Route>
-                          <Route exact path="/courts">
-                            <Courts />
-                          </Route>
-                          <Route exact path="/cases">
-                            <Cases />
-                          </Route>
-                          <Route exact path="/cases/:ID">
-                            <Case />
-                          </Route>
-                          <Route exact path="/tokens">
-                            <Tokens />
-                          </Route>
-                          <Route exact path="/convert-pnk">
-                            <ConvertPnk />
-                          </Route>
-                          <Route path="*">
-                            <C404 />
-                          </Route>
+                          <Route exact path="/" component={Home} />
+                          <Route exact path="/courts" component={Courts} />
+                          <Route exact path="/cases" component={Cases} />
+                          <Route exact path="/cases/:ID" component={Case} />
+                          <Route exact path="/tokens" component={Tokens} />
+                          <Route exact path="/convert-pnk" component={ConvertPnk} />
+                          <Route path="*" component={C404} />
                         </Switch>
                       </StyledLayoutContent>
                       <Footer />
                       <StyledClickaway
                         isMenuClosed={isMenuClosed}
-                        onClick={isMenuClosed ? null : () => setIsMenuClosed(true)}
+                        onClick={!isMenuClosed ? closeMenu : null}
                       />
                     </Layout>
                   </Layout>
@@ -108,52 +101,44 @@ export default function App() {
   );
 }
 
+// Drizzle Chain ID Provider
 function DrizzleChainIdProvider({ children }) {
   const { drizzle } = useDrizzle();
-
-  return drizzle.web3 ? <ChainIdProvider web3={drizzle.web3}>{children}</ChainIdProvider> : <C404 Web3 />;
+  return drizzle.web3 ? <ChainIdProvider web3={drizzle.web3}>{children}</ChainIdProvider> : <C404 />;
 }
 
 DrizzleChainIdProvider.propTypes = {
-  children: t.node,
+  children: PropTypes.node,
 };
 
+// Styled Components
 const StyledSpin = styled(Spin)`
-  left: 50%;
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 `;
 
-const C404 = loadable(() => import(/* webpackPrefetch: true */ "../containers/404"), {
-  fallback: <StyledSpin />,
-});
+const C404 = loadable(() => import(/* webpackPrefetch: true */ "../containers/404"), { fallback: <StyledSpin /> });
+const Home = loadable(() => import(/* webpackPrefetch: true */ "../containers/home"), { fallback: <StyledSpin /> });
+const Courts = loadable(() => import(/* webpackPrefetch: true */ "../containers/courts"), { fallback: <StyledSpin /> });
+const Cases = loadable(() => import(/* webpackPrefetch: true */ "../containers/cases"), { fallback: <StyledSpin /> });
+const Tokens = loadable(() => import(/* webpackPrefetch: true */ "../containers/tokens"), { fallback: <StyledSpin /> });
+const ConvertPnk = loadable(() => import(/* webpackPrefetch: true */ "../containers/convert-pnk"), { fallback: <StyledSpin /> });
 
-const Home = loadable(() => import(/* webpackPrefetch: true */ "../containers/home"), {
-  fallback: <StyledSpin />,
-});
 
-const Courts = loadable(() => import(/* webpackPrefetch: true */ "../containers/courts"), {
-  fallback: <StyledSpin />,
-});
-
-const Cases = loadable(() => import(/* webpackPrefetch: true */ "../containers/cases"), {
-  fallback: <StyledSpin />,
-});
-
+// Lazy Loading for Case Component with Validation
 const CasePage = loadable(
   async ({ ID }) => {
     try {
       await drizzle.contracts.KlerosLiquid.methods.disputes(ID).call();
+      return import(/* webpackPrefetch: true */ "../containers/case");
     } catch (err) {
       console.error(err);
       return C404;
     }
-    return import(/* webpackPrefetch: true */ "../containers/case");
   },
-  {
-    fallback: <StyledSpin />,
-  }
+  { fallback: <StyledSpin /> }
 );
 
 const Case = () => {
@@ -161,35 +146,32 @@ const Case = () => {
   return <CasePage ID={ID} />;
 };
 
-const Tokens = loadable(() => import(/* webpackPrefetch: true */ "../containers/tokens"), {
-  fallback: <StyledSpin />,
-});
-
-const ConvertPnk = loadable(() => import(/* webpackPrefetch: true */ "../containers/convert-pnk"), {
-  fallback: <StyledSpin />,
-});
-
+// Menu Items
 const MenuItems = [
-  <Menu.Item key="home">
-    <NavLink to="/">Home</NavLink>
-  </Menu.Item>,
-  <Menu.Item key="courts">
-    <NavLink to="/courts">Courts</NavLink>
-  </Menu.Item>,
-  <Menu.Item key="cases">
-    <NavLink to="/cases">My Cases</NavLink>
-  </Menu.Item>,
-  <Menu.Item key="guide">
-    <a
-      href="https://blog.kleros.io/become-a-juror-blockchain-dispute-resolution-on-ethereum/"
-      rel="noopener noreferrer"
-      target="_blank"
-    >
-      Guide
-    </a>
-  </Menu.Item>,
-];
+  { key: "home", label: "Home", path: "/" },
+  { key: "courts", label: "Courts", path: "/courts" },
+  { key: "cases", label: "My Cases", path: "/cases" },
+  {
+    key: "guide",
+    label: "Guide",
+    path: "https://blog.kleros.io/become-a-juror-blockchain-dispute-resolution-on-ethereum/",
+    external: true,
+  },
+].map(({ key, label, path, external }) =>
+  external ? (
+    <Menu.Item key={key}>
+      <a href={path} target="_blank" rel="noopener noreferrer">
+        {label}
+      </a>
+    </Menu.Item>
+  ) : (
+    <Menu.Item key={key}>
+      <NavLink to={path}>{label}</NavLink>
+    </Menu.Item>
+  )
+);
 
+// Notification Settings
 const settings = {
   draw: "When I am drawn as a juror.",
   appeal: "When a case I ruled is appealed.",
@@ -199,91 +181,99 @@ const settings = {
   stake: "When my stakes are changed.",
 };
 
+// Styled Layout Components
+// Global Constants
+const SIDEBAR_BG = "#4d00b4";
+const HEADER_BG = "#4d00b4";
+const CONTENT_BG = "#f2e3ff";
+const MENU_ITEM_COLOR = "rgba(255, 255, 255, 0.85)";
+const MENU_ITEM_HOVER = "rgba(255, 255, 255, 1)";
+
 const StyledLayoutSider = styled(Layout.Sider)`
-  height: 100%;
-  position: fixed;
-  z-index: 2000;
-  background-color: #4d00b4;
+    position: fixed;
+    height: 100%;
+    z-index: 2000;
+    background-color: ${SIDEBAR_BG};
 
-  @media (min-width: 768px) {
-    display: none;
-  }
+    @media (min-width: 768px) {
+        display: none;
+    }
 
-  .ant-layout-sider-zero-width-trigger {
-    right: -50px;
-    top: 12px;
-    width: 50px;
-    background-color: rgba(0, 0, 0, 0.2);
-  }
+    .ant-layout-sider-zero-width-trigger {
+        position: absolute;
+        right: -50px;
+        top: 12px;
+        width: 50px;
+        background-color: rgba(0, 0, 0, 0.2);
+    }
 
-  .ant-menu-dark {
-    background: transparent;
-  }
+    .ant-menu-dark {
+        background: transparent;
+    }
 `;
 
 const StyledLogoCol = styled(Col)`
-  display: flex;
-  align-items: center;
-  height: 64px;
-
-  @media (max-width: 769.98px) {
+    display: flex;
+    align-items: center;
+    height: 64px;
     padding-left: 1rem;
-  }
 
-  @media (max-width: 575px) {
-    &.ant-col-xs-0 {
-      display: none;
+    @media (max-width: 769.98px) {
+        padding-left: 1rem;
     }
-  }
+
+    @media (max-width: 575px) {
+        &.ant-col-xs-0 {
+            display: none;
+        }
+    }
 `;
 
 const StyledTrayCol = styled(Col)`
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 64px;
 `;
 
 const StyledMenu = styled(Menu)`
-  font-weight: 500;
-  line-height: 64px !important;
-  text-align: center;
+    font-weight: 500;
+    line-height: 64px !important;
+    text-align: center;
 
-  &.ant-menu-dark {
-    background-color: transparent;
-  }
+    &.ant-menu-dark {
+        background: transparent;
+    }
 
-  && {
     .ant-menu-item > a {
-      color: rgba(255, 255, 255, 0.85);
+        color: ${MENU_ITEM_COLOR};
+        transition: color 0.2s ease-in-out;
 
-      &.hover,
-      &.focus {
-        color: rgba(255, 255, 255, 1);
-      }
+        &:hover,
+        &:focus {
+            color: ${MENU_ITEM_HOVER};
+        }
     }
 
     .ant-menu-item-selected {
-      background-color: transparent !important;
+        background: transparent !important;
 
-      > a {
-        color: rgba(255, 255, 255, 1);
-      }
+        > a {
+            color: ${MENU_ITEM_HOVER};
+        }
     }
-  }
 `;
 
 const StyledLayoutContent = styled(Layout.Content)`
-  background: #f2e3ff;
-  // The header takes exactly 64px
+  background: ${CONTENT_BG};
   min-height: calc(100vh - 64px);
-  padding: 0px 9.375vw 120px 9.375vw;
+  padding: 0 9.375vw 120px;
 `;
 
 const StyledLayoutHeader = styled(Layout.Header)`
+  background-color: ${HEADER_BG};
   height: auto;
-  line-height: initial;
-  background-color: #4d00b4;
+  line-height: normal;
 `;
 
 const StyledTray = styled.div`
@@ -299,16 +289,11 @@ const StyledTray = styled.div`
 const StyledClickaway = styled.div`
   position: fixed;
   z-index: 1000;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0; /* Equivalent to top: 0; right: 0; bottom: 0; left: 0 */
   background-color: black;
-  opacity: ${(properties) => (properties.isMenuClosed ? 0 : 0.4)};
-  pointer-events: ${(properties) => (properties.isMenuClosed ? "none" : "auto")};
-  transition: opacity 0.3s;
+  opacity: ${({ isMenuClosed }) => (isMenuClosed ? 0 : 0.4)};
+  pointer-events: ${({ isMenuClosed }) => (isMenuClosed ? "none" : "auto")};
+  transition: opacity 0.3s ease-in-out;
 `;
 
 const LogoNavLink = styled(NavLink)`
