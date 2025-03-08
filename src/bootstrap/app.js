@@ -1,6 +1,6 @@
 import "../components/theme.css";
 import "./app.css";
-import log from "../../helpers/logger";
+import log from "/../helpers/logger";
 import React, { useState } from "react";
 import loadable from "@loadable/component";
 import styled from "styled-components/macro";

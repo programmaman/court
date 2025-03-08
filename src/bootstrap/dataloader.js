@@ -1,4 +1,4 @@
-import log from "../../helpers/logger"; // Import logger
+import log from "/../helpers/logger"; // Import logger
 
 /**
  * Extracts and returns the protocol from a given URI.
