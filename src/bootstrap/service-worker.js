@@ -1,173 +1,223 @@
-// This optional code is used to register a service worker.
-// register() is not called by default.
+import log from "/../helpers/logger"; // Import logger
 
-// This lets the app load faster on subsequent visits in production, and gives
-// it offline capabilities. However, it also means that developers (and users)
-// will only see deployed updates on subsequent visits to a page, after all the
-// existing tabs open on the page have been closed, since previously cached
-// resources are updated in the background.
-
-// To learn more about the benefits of this model and instructions on how to
-// opt-in, read http://bit.ly/CRA-PWA
-
+// Detect if the app is running on localhost
 const isLocalhost = Boolean(
-  window.location.hostname === 'localhost' ||
-    // [::1] is the IPv6 localhost address.
-    window.location.hostname === '[::1]' ||
-    // 127.0.0.1/8 is considered localhost for IPv4.
-    window.location.hostname.match(
-      /^127(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}$/
-    )
-)
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "[::1]" || // IPv6 localhost
+  window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3}$/) // IPv4 localhost
+);
 
-export const register = config => {
-  if ('serviceWorker' in navigator) {
-    // The URL constructor is available in all browsers that support SW.
-    const publicUrl = new URL(process.env.PUBLIC_URL, window.location.href)
-    if (publicUrl.origin !== window.location.origin)
-      // Our service worker won't work if PUBLIC_URL is on a different origin
-      // from what our page is served on. This might happen if a CDN is used to
-      // serve assets; see https://github.com/facebook/create-react-app/issues/2374
-      return
+log.debug(`Service Worker: Running in ${isLocalhost ? "localhost" : "production"} mode.`);
 
-    window.addEventListener('load', () => {
-      const swUrl = `${process.env.PUBLIC_URL}/sw.js`
+export const register = (config) => {
+  if ("serviceWorker" in navigator) {
+    log.debug("Service Worker: Checking registration support.");
+
+    const publicUrl = new URL(process.env.PUBLIC_URL, window.location.href);
+    if (publicUrl.origin !== window.location.origin) {
+      log.warn(
+        "Service Worker: PUBLIC_URL is on a different origin, skipping registration."
+      );
+      return;
+    }
+
+    window.addEventListener("load", () => {
+      const swUrl = `${process.env.PUBLIC_URL}/sw.js`;
+      log.debug(`Service Worker: Registering from URL: ${swUrl}`);
 
       if (isLocalhost) {
-        // This is running on localhost. Let's check if a service worker still exists or not.
-        checkValidServiceWorker(swUrl, config)
+        log.debug("Service Worker: Running in localhost, verifying existing registration.");
+        checkValidServiceWorker(swUrl, config);
 
-        // Add some additional logging to localhost, pointing developers to the
-        // service worker/PWA documentation.
         navigator.serviceWorker.ready.then(() => {
-          console.log(
-            'This web app is being served cache-first by a service ' +
-              'worker. To learn more, visit http://bit.ly/CRA-PWA'
-          )
-        })
+          log.debug(
+            "Service Worker: App is being served cache-first. For more info, visit http://bit.ly/CRA-PWA"
+          );
+        });
+      } else {
+        log.debug("Service Worker: Registering in production mode.");
+        registerValidSW(swUrl, config);
       }
-      // Is not localhost. Just register service worker
-      else registerValidSW(swUrl, config)
-    })
+    });
+  } else {
+    log.warn("Service Worker: Not supported in this browser.");
   }
-}
+};
 
 const registerValidSW = (swUrl, config) => {
+  log.debug(`registerValidSW called with swUrl: ${swUrl}`);
+
   navigator.serviceWorker
     .register(swUrl)
-    .then(registration => {
+    .then((registration) => {
+      log.debug("Service worker registered successfully.", { swUrl });
+
       registration.onupdatefound = () => {
-        const installingWorker = registration.installing
-        if (installingWorker == null) return
+        log.debug("Service worker update found.");
+
+        const installingWorker = registration.installing;
+        if (installingWorker == null) {
+          log.warn("No installing worker found.");
+          return;
+        }
 
         installingWorker.onstatechange = () => {
-          if (installingWorker.state === 'installed')
+          log.debug(`Service worker state changed: ${installingWorker.state}`);
+
+          if (installingWorker.state === "installed") {
             if (navigator.serviceWorker.controller) {
-              // At this point, the updated precached content has been fetched,
-              // but the previous service worker will still serve the older
-              // content until all client tabs are closed.
-              console.log(
-                'New content is available and will be used when all ' +
-                  'tabs for this page are closed. See http://bit.ly/CRA-PWA.'
-              )
+              log.debug(
+                "New content is available and will be used when all tabs are closed. See http://bit.ly/CRA-PWA."
+              );
 
               // Execute callback
-              if (config && config.onUpdate) config.onUpdate(registration)
+              if (config && config.onUpdate) {
+                log.debug("Executing onUpdate callback.");
+                config.onUpdate(registration);
+              }
             } else {
-              // At this point, everything has been precached.
-              // It's the perfect time to display a
-              // "Content is cached for offline use." message.
-              console.log('Content is cached for offline use.')
+              log.debug("Content is cached for offline use.");
 
               // Execute callback
-              if (config && config.onSuccess) config.onSuccess(registration)
+              if (config && config.onSuccess) {
+                log.debug("Executing onSuccess callback.");
+                config.onSuccess(registration);
+              }
             }
-        }
-      }
+          }
+        };
+      };
     })
-    .catch(err => {
-      console.error('Error during service worker registration:', err)
-    })
-}
+    .catch((err) => {
+      log.error("Error during service worker registration:", err.message);
+    });
+};
 
 const checkValidServiceWorker = (swUrl, config) => {
+  log.debug(`checkValidServiceWorker called with swUrl: ${swUrl}`);
+
   // Check if the service worker can be found. If it can't reload the page.
   fetch(swUrl)
-    .then(response => {
+    .then((response) => {
+      log.debug("Service worker fetch response received.", {
+        status: response.status,
+        contentType: response.headers.get("content-type"),
+      });
+
       // Ensure service worker exists, and that we really are getting a JS file.
-      const contentType = response.headers.get('content-type')
+      const contentType = response.headers.get("content-type");
       if (
         response.status === 404 ||
-        (contentType != null && contentType.indexOf('javascript') === -1)
-      )
-        // No service worker found. Probably a different app. Reload the page.
-        navigator.serviceWorker.ready.then(registration => {
+        (contentType != null && contentType.indexOf("javascript") === -1)
+      ) {
+        log.warn("No valid service worker found. Unregistering and reloading the page.");
+
+        navigator.serviceWorker.ready.then((registration) => {
           registration.unregister().then(() => {
-            window.location.reload()
-          })
-        })
-      // Service worker found. Proceed as normal.
-      else registerValidSW(swUrl, config)
+            window.location.reload();
+          });
+        });
+      } else {
+        log.debug("Valid service worker found. Proceeding with normal registration.");
+        registerValidSW(swUrl, config);
+      }
     })
     .catch(() => {
-      console.log(
-        'No internet connection found. App is running in offline mode.'
-      )
-    })
-}
+      log.warn("No internet connection found. App is running in offline mode.");
+    });
+};
 
 export const unregister = () => {
-  if ('serviceWorker' in navigator)
-    navigator.serviceWorker.ready.then(registration => {
-      registration.unregister()
-    })
-}
+  if ("serviceWorker" in navigator) {
+    log.debug("Service Worker: Unregistration requested.");
+
+    navigator.serviceWorker.ready
+      .then((registration) => {
+        log.debug("Service Worker: Unregistering...");
+        return registration.unregister();
+      })
+      .then(() => {
+        log.debug("Service Worker: Successfully unregistered.");
+      })
+      .catch((err) => {
+        log.error("Service Worker: Unregistration failed.", err.message);
+      });
+  } else {
+    log.warn("Service Worker: Not supported in this browser.");
+  }
+};
 
 export const askPermission = () => {
-  return new Promise(function(resolve, reject) {
-    const permissionResult = Notification.requestPermission(function(result) {
-      resolve(result)
-    })
+  log.debug("Requesting Notification permission...");
+
+  return new Promise(function (resolve, reject) {
+    const permissionResult = Notification.requestPermission(function (result) {
+      log.debug(`Notification permission request result (callback): ${result}`);
+      resolve(result);
+    });
 
     if (permissionResult) {
-      permissionResult.then(resolve, reject)
+      permissionResult.then((result) => {
+        log.debug(`Notification permission result (Promise): ${result}`);
+        resolve(result);
+      }, reject);
     }
-  }).then(function(permissionResult) {
-    if (permissionResult !== 'granted') {
-      throw new Error("We weren't granted permission.")
+  }).then(function (permissionResult) {
+    if (permissionResult !== "granted") {
+      log.warn("Notification permission was denied.");
+      throw new Error("We weren't granted permission.");
     }
-  })
-}
+    log.debug("Notification permission granted.");
+  });
+};
 
 export const subscribeUserToPush = async () => {
-  const swUrl = `${process.env.PUBLIC_URL}/sw.js`
+  const swUrl = `${process.env.PUBLIC_URL}/sw.js`;
+  log.debug(`Attempting to register service worker for push notifications: ${swUrl}`);
+
   return new Promise((resolve, reject) => {
-    navigator.serviceWorker.register(swUrl).then(registration => {
+    navigator.serviceWorker.register(swUrl).then((registration) => {
+      log.debug("Service Worker registered for push notifications.");
+
       const subscribeOptions = {
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(
-          'BPRV92GzWwsZcr3PX6pz_RZRCOStsM68JcqkCJJbfdZqKm1resLwElm7MgiU4_gNGXtzZv0gN4pkKVRnnF8KQPk'
-        )
-      }
+          "BPRV92GzWwsZcr3PX6pz_RZRCOStsM68JcqkCJJbfdZqKm1resLwElm7MgiU4_gNGXtzZv0gN4pkKVRnnF8KQPk"
+        ),
+      };
+
+      log.debug("Requesting push subscription...");
 
       registration.pushManager
         .subscribe(subscribeOptions)
-        .then(function(pushSubscription) {
-          resolve(pushSubscription)
+        .then(function (pushSubscription) {
+          log.debug("Push subscription successful.", pushSubscription);
+          resolve(pushSubscription);
         })
-    })
-  })
-}
+        .catch((err) => {
+          log.error("Push subscription failed.", err.message);
+          reject(err);
+        });
+    }).catch((err) => {
+      log.error("Service Worker registration failed for push notifications.", err.message);
+      reject(err);
+    });
+  });
+};
 
-const urlBase64ToUint8Array = base64String => {
-  var padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-  var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+const urlBase64ToUint8Array = (base64String) => {
+  log.debug("Converting Base64 string to Uint8Array.");
 
-  var rawData = window.atob(base64)
-  var outputArray = new Uint8Array(rawData.length)
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
 
   for (var i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i)
+    outputArray[i] = rawData.charCodeAt(i);
   }
-  return outputArray
-}
+
+  log.debug("Base64 conversion complete.");
+  return outputArray;
+};
