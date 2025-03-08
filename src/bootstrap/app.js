@@ -1,5 +1,6 @@
 import "../components/theme.css";
 import "./app.css";
+import log from "../../helpers/logger";
 import React, { useState } from "react";
 import loadable from "@loadable/component";
 import styled from "styled-components/macro";
@@ -18,11 +19,25 @@ import SwitchChainFallback from "../components/error-fallback/switch-chain";
 import PropTypes from "prop-types";
 
 export default function App() {
+  log.debug("App component mounted.");
+
   const [isMenuClosed, setIsMenuClosed] = useState(true);
 
-  // Handlers for toggling and closing the menu
-  const toggleMenu = () => setIsMenuClosed((prev) => !prev);
-  const closeMenu = () => setIsMenuClosed(true);
+  // Toggle menu state
+  const toggleMenu = () => {
+    setIsMenuClosed((prev) => {
+      log.debug(`Menu toggled: ${!prev ? "Closed" : "Opened"}`);
+      return !prev;
+    });
+  };
+
+  // Close menu when clicking outside
+  const closeMenu = () => {
+    if (!isMenuClosed) {
+      log.debug("Menu closed.");
+    }
+    setIsMenuClosed(true);
+  };
 
   return (
     <>
@@ -103,8 +118,17 @@ export default function App() {
 
 // Drizzle Chain ID Provider
 function DrizzleChainIdProvider({ children }) {
+  log.debug("DrizzleChainIdProvider initialized."); // Log initialization
+
   const { drizzle } = useDrizzle();
-  return drizzle.web3 ? <ChainIdProvider web3={drizzle.web3}>{children}</ChainIdProvider> : <C404 />;
+
+  if (!drizzle.web3) {
+    log.warn("DrizzleChainIdProvider: Web3 provider missing."); // Warn if Web3 is missing
+    return <C404 />;
+  }
+
+  log.debug("DrizzleChainIdProvider: Web3 detected."); // Confirm Web3 is available
+  return <ChainIdProvider web3={drizzle.web3}>{children}</ChainIdProvider>;
 }
 
 DrizzleChainIdProvider.propTypes = {
@@ -119,32 +143,65 @@ const StyledSpin = styled(Spin)`
     transform: translate(-50%, -50%);
 `;
 
-const C404 = loadable(() => import(/* webpackPrefetch: true */ "../containers/404"), { fallback: <StyledSpin /> });
-const Home = loadable(() => import(/* webpackPrefetch: true */ "../containers/home"), { fallback: <StyledSpin /> });
-const Courts = loadable(() => import(/* webpackPrefetch: true */ "../containers/courts"), { fallback: <StyledSpin /> });
-const Cases = loadable(() => import(/* webpackPrefetch: true */ "../containers/cases"), { fallback: <StyledSpin /> });
-const Tokens = loadable(() => import(/* webpackPrefetch: true */ "../containers/tokens"), { fallback: <StyledSpin /> });
-const ConvertPnk = loadable(() => import(/* webpackPrefetch: true */ "../containers/convert-pnk"), { fallback: <StyledSpin /> });
+// Lazy Loading for 404 Page
+const C404 = loadable(() => {
+  log.debug("Loading 404 (Not Found) page...");
+  return import(/* webpackPrefetch: true */ "../containers/404");
+}, { fallback: <StyledSpin /> });
 
+// Lazy Loading for Home Page
+const Home = loadable(() => {
+  log.debug("Loading Home page...");
+  return import(/* webpackPrefetch: true */ "../containers/home");
+}, { fallback: <StyledSpin /> });
+
+// Lazy Loading for Courts Page
+const Courts = loadable(() => {
+  log.debug("Loading Courts page...");
+  return import(/* webpackPrefetch: true */ "../containers/courts");
+}, { fallback: <StyledSpin /> });
+
+// Lazy Loading for Cases Page
+const Cases = loadable(() => {
+  log.debug("Loading Cases page...");
+  return import(/* webpackPrefetch: true */ "../containers/cases");
+}, { fallback: <StyledSpin /> });
+
+// Lazy Loading for Tokens Page
+const Tokens = loadable(() => {
+  log.debug("Loading Tokens page...");
+  return import(/* webpackPrefetch: true */ "../containers/tokens");
+}, { fallback: <StyledSpin /> });
+
+// Lazy Loading for Convert PNK Page
+const ConvertPnk = loadable(() => {
+  log.debug("Loading Convert PNK page...");
+  return import(/* webpackPrefetch: true */ "../containers/convert-pnk");
+}, { fallback: <StyledSpin /> });
 
 // Lazy Loading for Case Component with Validation
 const CasePage = loadable(
   async ({ ID }) => {
+    log.debug(`Loading Case page for ID: ${ID}...`);
     try {
       await drizzle.contracts.KlerosLiquid.methods.disputes(ID).call();
+      log.debug(`Successfully loaded Case page for ID: ${ID}`);
       return import(/* webpackPrefetch: true */ "../containers/case");
     } catch (err) {
-      console.error(err);
+      log.error(`Error loading Case page for ID: ${ID} - ${err.message}`);
       return C404;
     }
   },
   { fallback: <StyledSpin /> }
 );
 
+// Component for Lazy Loading Case Page
 const Case = () => {
   const { ID } = useParams();
+  log.debug(`Rendering Case component for ID: ${ID}`);
   return <CasePage ID={ID} />;
 };
+
 
 // Menu Items
 const MenuItems = [
