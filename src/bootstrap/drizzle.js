@@ -8,6 +8,8 @@ import PolicyRegistry from "../assets/contracts/policy-registry.json";
 import UniswapV2Factory from "../assets/contracts/uniswap-v2-factory.json";
 import UniswapV2Router02 from "../assets/contracts/uniswap-v2-router-02.json";
 
+//TODO: Investigate and refactor this mess
+
 const defaultOptions = {
   networkWhitelist: [
     1, // Mainnet
@@ -97,22 +99,43 @@ const { DrizzleProvider, Initializer, useDrizzle } = drizzleReactHooks;
 
 export { DrizzleProvider, Initializer, useDrizzle };
 
+import log from "/../helpers/logger"; // Import logger
+
 function createDrizzle({ fallbackChainId }) {
+  log.debug(`createDrizzle called with fallbackChainId: ${fallbackChainId}`);
+
   const fallbackUrl = chainIdToFallbackUrl[fallbackChainId];
+
+  if (fallbackUrl) {
+    log.debug(`Using fallback URL for chain ${fallbackChainId}: ${fallbackUrl}`);
+  } else {
+    log.warn(`No fallback URL found for chain ${fallbackChainId}. Web3 provider might not be available.`);
+  }
+
   const optionsWeb3Mixin = fallbackUrl
     ? {
-        web3: {
-          fallback: {
-            url: fallbackUrl,
-          },
+      web3: {
+        fallback: {
+          url: fallbackUrl,
         },
-      }
+      },
+    }
     : {};
 
+  log.debug("Merging default Drizzle options with Web3 fallback settings.");
   const options = { ...defaultOptions, ...optionsWeb3Mixin };
 
-  return new Drizzle(options, generateStore(options));
+  try {
+    log.debug("Initializing Drizzle instance...");
+    const drizzleInstance = new Drizzle(options, generateStore(options));
+    log.debug("Drizzle instance created successfully.");
+    return drizzleInstance;
+  } catch (error) {
+    log.error("Failed to create Drizzle instance:", error.message);
+    throw error;
+  }
 }
+
 
 /**
  * Workaround to allow non-web3 browsers to connect to the right chain
@@ -136,30 +159,44 @@ const STORAGE_KEY = "@@kleros/court/fallback-chain-id";
 const DEFAULT_FALLBACK_CHAIN_ID = 1;
 
 const extractFromQueryString = (param, search) => {
+  log.debug(`extractFromQueryString called with param: ${param}, search: ${search}`);
+
   if (typeof URLSearchParams !== "function") {
+    log.warn("URLSearchParams is not supported, falling back to regex.");
     const regex = new RegExp(`(\\?:\\\\?|&)?${param}=([^&]*)`);
     const matches = regex.exec(search);
+    log.debug(matches ? `Match found: ${matches[1]}` : "No match found.");
     return matches ? matches[1] : undefined;
   }
 
   const params = new URLSearchParams(search);
-  return params.get(param);
+  const value = params.get(param);
+  log.debug(value ? `Extracted value: ${value}` : `No value found for ${param}`);
+  return value;
 };
 
 const detectRequiredChainId = () => {
+  log.debug("detectRequiredChainId called.");
+
   const fromStorage = Number.parseInt(window?.localStorage?.getItem(STORAGE_KEY), 10);
+  log.debug(`Retrieved from localStorage: ${fromStorage}`);
+
   const fromQueryString = Number.parseInt(
     extractFromQueryString("requiredChainId", window?.location?.search ?? ""),
     10
   );
+  log.debug(`Retrieved from query string: ${fromQueryString}`);
 
   const chainId = !Number.isNaN(fromQueryString)
     ? fromQueryString
     : !Number.isNaN(fromStorage)
-    ? fromStorage
-    : DEFAULT_FALLBACK_CHAIN_ID;
+      ? fromStorage
+      : DEFAULT_FALLBACK_CHAIN_ID;
+
+  log.debug(`Final selected chainId: ${chainId}`);
 
   if (Number.isNaN(fromStorage) || fromStorage !== fromQueryString) {
+    log.debug(`Updating localStorage with chainId: ${chainId}`);
     window.localStorage.setItem(STORAGE_KEY, chainId);
   }
 
