@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 import t from "prop-types";
+import log from "../../helpers/logger"; // Import logger
 import useChainId from "../hooks/use-chain-id";
 import usePrevious from "../hooks/use-previous";
 
 export default function ChainChangeWatcher({ children }) {
+  log.debug("ChainChangeWatcher mounted."); // Log component mount
   useReloadOnChainChanged();
-
   return children;
 }
 
@@ -19,6 +20,7 @@ function useReloadOnChainChanged() {
 
   useEffect(() => {
     if (chainId !== undefined && previousChainId !== undefined && chainId !== previousChainId) {
+      log.debug(`Chain changed: ${previousChainId} → ${chainId}. Reloading page.`);
       window.location.reload();
     }
   }, [previousChainId, chainId]);
