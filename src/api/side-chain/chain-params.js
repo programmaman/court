@@ -1,13 +1,7 @@
+import log from "../../helpers/logger"; // Import the logger
 import logoXPNK from "../../assets/images/xPNK.png";
 import logoStPNK from "../../assets/images/stPNK.png";
 import { getBaseUrl } from "../../helpers/block-explorer";
-
-// Secure logging function (only logs in development mode)
-const log = (message, data = {}) => {
-  if (process.env.NODE_ENV === "development") {
-    console.log(`[SideChain] ${message}`, data);
-  }
-};
 
 export const Tokens = {
   PNK: "PNK",
@@ -43,16 +37,16 @@ const supportedSideChains = {
 };
 
 export function getSideChainId(chainId) {
-  log("getSideChainId called", { chainId });
+  log.debug("getSideChainId called", { chainId });
   return getSideChainParamsFromMainChainId(chainId).chainId;
 }
 
 export function getSideChainParams(sideChainId) {
-  log("getSideChainParams called", { sideChainId });
+  log.debug("getSideChainParams called", { sideChainId });
 
   const params = supportedSideChains[sideChainId];
   if (!params) {
-    log("Unsupported side-chain ID", { sideChainId });
+    log.warn("Unsupported side-chain ID", { sideChainId });
     throw new Error(`Unsupported side-chain ID: ${sideChainId}`);
   }
 
@@ -60,16 +54,16 @@ export function getSideChainParams(sideChainId) {
 }
 
 export function isSupportedSideChain(chainId) {
-  log("isSupportedSideChain called", { chainId });
+  log.debug("isSupportedSideChain called", { chainId });
   return supportedSideChains[chainId] !== undefined;
 }
 
 export function getSideChainParamsFromMainChainId(mainChainId) {
-  log("getSideChainParamsFromMainChainId called", { mainChainId });
+  log.debug("getSideChainParamsFromMainChainId called", { mainChainId });
 
   const params = mainChainIdToSideChainParams[mainChainId];
   if (!params) {
-    log("Unsupported main chain ID", { mainChainId });
+    log.warn("Unsupported main chain ID", { mainChainId });
     throw new Error(`Unsupported chain ID: ${mainChainId}`);
   }
 
@@ -77,22 +71,22 @@ export function getSideChainParamsFromMainChainId(mainChainId) {
 }
 
 export function getMainChainId(chainId) {
-  log("getMainChainId called", { chainId });
+  log.debug("getMainChainId called", { chainId });
   return getSideChainParams(chainId).mainChainId;
 }
 
 export function isSupportedMainChain(chainId) {
-  log("isSupportedMainChain called", { chainId });
+  log.debug("isSupportedMainChain called", { chainId });
   return mainChainIdToSideChainParams[chainId] !== undefined;
 }
 
 export function isSupportedChain(chainId) {
-  log("isSupportedChain called", { chainId });
+  log.debug("isSupportedChain called", { chainId });
   return isSupportedSideChain(chainId) || isSupportedMainChain(chainId);
 }
 
 export function getCounterPartyChainId(chainId) {
-  log("getCounterPartyChainId called", { chainId });
+  log.debug("getCounterPartyChainId called", { chainId });
 
   if (isSupportedMainChain(chainId)) {
     return getSideChainId(chainId);
@@ -102,7 +96,7 @@ export function getCounterPartyChainId(chainId) {
     return getMainChainId(chainId);
   }
 
-  log("Unsupported chain ID", { chainId });
+  log.warn("Unsupported chain ID", { chainId });
   throw new Error(`Unsupported chain ID: ${chainId}`);
 }
 
@@ -112,11 +106,11 @@ const mainChainIdToSideChainParams = Object.values(supportedSideChains).reduce(
 );
 
 function ensureEnv(key, msg = `process.env.${key} is not defined`) {
-  log("ensureEnv called", { key });
+  log.debug("ensureEnv called", { key });
 
   const value = process.env[key];
   if (!value) {
-    log("Missing environment variable", { key });
+    log.warn("Missing environment variable", { key });
     throw new Error(msg);
   }
 
