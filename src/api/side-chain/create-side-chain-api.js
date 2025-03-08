@@ -1,3 +1,4 @@
+import log from "../../helpers/logger"; // Import the logger
 import Web3 from "web3";
 import KlerosLiquidExtraViews from "../../assets/contracts/kleros-liquid-extra-views.json";
 import KlerosLiquid from "../../assets/contracts/kleros-liquid.json";
@@ -7,35 +8,28 @@ import XPinakion from "../../assets/contracts/x-pinakion.json";
 import { getCounterPartyChainId, isSupportedSideChain } from "./chain-params";
 import * as xDai from "./xdai-api";
 
-// Secure logging function
-const log = (message, data = {}) => {
-  if (process.env.NODE_ENV === "development") {
-    console.log(`[SideChainAPI] ${message}`, data);
-  }
-};
-
 export default async function createSideChainApi(provider) {
-  log("createSideChainApi called");
+  log.debug("createSideChainApi called");
 
   const web3 = new Web3(provider);
   const chainId = await web3.eth.getChainId();
 
-  log("Fetched chainId", { chainId });
+  log.debug("Fetched chainId", { chainId });
 
   if (!isSupportedSideChain(chainId)) {
-    console.error(`[SideChainAPI] Unsupported chain ID: ${chainId}`);
+    log.warn("Unsupported chain ID", { chainId });
     throw new Error(`Unsupported chain ID: ${chainId}`);
   }
 
   const api = xDai.createApi(xDaiParametersFactory(web3));
 
-  log("SideChain API created successfully");
+  log.debug("SideChain API created successfully");
 
   return api;
 }
 
 const xDaiParametersFactory = (web3) => {
-  log("xDaiParametersFactory called");
+  log.debug("xDaiParametersFactory called");
 
   const contracts = {
     tokenBridge: new web3.eth.Contract(TokenBridgeXDai.abi, ensureEnv("REACT_APP_TOKEN_BRIDGE_XDAI_ADDRESS")),
@@ -48,14 +42,14 @@ const xDaiParametersFactory = (web3) => {
     klerosLiquid: new web3.eth.Contract(KlerosLiquid.abi, ensureEnv("REACT_APP_KLEROS_LIQUID_XDAI_ADDRESS")),
   };
 
-  log("Contracts initialized");
+  log.debug("Contracts initialized");
 
   contracts.tokenBridge.options.handleRevert = true;
   contracts.wrappedPinakion.options.handleRevert = true;
   contracts.klerosLiquidExtraViews.options.handleRevert = true;
   contracts.klerosLiquid.options.handleRevert = true;
 
-  log("Contract options set");
+  log.debug("Contract options set");
 
   return {
     ...contracts,
@@ -65,12 +59,12 @@ const xDaiParametersFactory = (web3) => {
 };
 
 function ensureEnv(key, msg = `process.env.${key} is not defined`) {
-  log("ensureEnv called", { key });
+  log.debug("ensureEnv called", { key });
 
   const value = process.env[key];
 
-  if (value === "" || value === undefined || value === null) {
-    console.error(`[SideChainAPI] ${msg}`);
+  if (!value) {
+    log.warn("Missing environment variable", { key });
     throw new Error(msg);
   }
 
