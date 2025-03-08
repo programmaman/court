@@ -1,4 +1,4 @@
-import log from "/../helpers/logger"; // Import logger
+import log from "../helpers/logger"; // Import logger
 
 // Detect if the app is running on localhost
 const isLocalhost = Boolean(

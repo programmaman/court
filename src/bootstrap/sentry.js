@@ -1,5 +1,5 @@
 import React from "react";
-import log from "/../helpers/logger"; // Import logger
+import log from "../helpers/logger";
 import * as Sentry from "@sentry/react";
 import { BrowserTracing } from "@sentry/tracing";
 import { version } from "../../package.json";

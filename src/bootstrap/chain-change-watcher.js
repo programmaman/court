@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import t from "prop-types";
-import log from "/../helpers/logger"; // Import logger
+import log from "../helpers/logger"; // Import logger
 import useChainId from "../hooks/use-chain-id";
 import usePrevious from "../hooks/use-previous";
 

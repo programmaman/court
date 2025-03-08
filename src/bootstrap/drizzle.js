@@ -1,3 +1,4 @@
+import log from "../helpers/logger"; // Import logger
 import { Drizzle, generateStore } from "@drizzle/store";
 import { drizzleReactHooks } from "@drizzle/react-plugin";
 import Kleros from "../assets/contracts/kleros.json";
@@ -99,7 +100,7 @@ const { DrizzleProvider, Initializer, useDrizzle } = drizzleReactHooks;
 
 export { DrizzleProvider, Initializer, useDrizzle };
 
-import log from "/../helpers/logger"; // Import logger
+
 
 function createDrizzle({ fallbackChainId }) {
   log.debug(`createDrizzle called with fallbackChainId: ${fallbackChainId}`);

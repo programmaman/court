@@ -1,4 +1,4 @@
-import log from "/../helpers/logger"; // Import logger
+import log from "../helpers/logger"; // Import logger
 
 log.debug("Initializing subgraph configuration...");
 
