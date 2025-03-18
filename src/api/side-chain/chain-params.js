@@ -113,6 +113,5 @@ function ensureEnv(key, msg = `process.env.${key} is not defined`) {
     log.warn("Missing environment variable", { key });
     throw new Error(msg);
   }
-
   return value;
 }

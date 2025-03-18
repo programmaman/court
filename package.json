@@ -31,13 +31,18 @@
     "prepare": "husky install"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.10",
     "@babel/helper-builder-react-jsx": "^7.12.13",
     "@babel/helper-regex": "^7.10.5",
     "@babel/plugin-proposal-nullish-coalescing-operator": "^7.14.2",
     "@babel/plugin-proposal-optional-chaining": "^7.14.2",
+    "@babel/preset-env": "^7.26.9",
+    "@babel/preset-react": "^7.26.3",
+    "@babel/preset-typescript": "^7.26.0",
     "@commitlint/cli": "^12.1.1",
     "@commitlint/config-conventional": "^12.1.1",
     "@prettier/plugin-xml": "^0.13.1",
+    "babel-jest": "^29.7.0",
     "cross-env": "^7.0.3",
     "customize-cra": "^1.0.0",
     "eslint-config-prettier": "^8.3.0",
@@ -46,6 +51,9 @@
     "eslint-plugin-prettier": "^3.4.0",
     "eslint-plugin-react": "^7.23.2",
     "eslint-plugin-react-hooks": "^4.2.0",
+    "husky": "^9.1.7",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "less": "^3.8.1",
     "lint-staged": "^10.5.4",
     "loglevel": "^1.9.2",
@@ -106,5 +114,36 @@
     "node": "16.20.2",
     "yarn": "1.22.10"
   },
-  "packageManager": "yarn@1.22.22"
+  "packageManager": "yarn@1.22.22",
+  "jest": {
+    "transform": {
+      "^.+\\.[tj]sx?$": "babel-jest"
+    },
+    "testEnvironment": "jsdom",
+    "setupFiles": [
+      "<rootDir>/jest.setup.js"
+    ],
+    "moduleNameMapper": {
+      "\\.(jpg|jpeg|png|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js"
+    },
+    "transformIgnorePatterns": [
+      "<rootDir>/node_modules/(?!ethereum-cryptography)"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.test.js",
+      "**/__tests__/**/*.test.ts"
+    ],
+    "moduleDirectories": [
+      "node_modules",
+      "src"
+    ],
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
+    "globals": {
+      "ts-jest": {
+        "useESM": true
+      }
+    }
+  }
 }
